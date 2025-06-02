@@ -28,18 +28,18 @@ def calcular_funcion_objetivo(X, matriz_relacion, pesos, beneficios, capacidad):
     peso_total = sum(pesos[i] for i in elementos_cubiertos) #Restriccion.
     if peso_total > capacidad:
         return 0  # No cumple la restriccion
-    return beneficio_total,peso_total
+    return beneficio_total,peso_total,len(elementos_cubiertos)
 
 ruta = ".\Problemas\Benchmark2.txt"
-m, n, capacidad, profits, weights, matriz_relaciones = Extraer_Datos.leer_datos_SUKP(ruta)
+items, elementos, capacidad, beneficios, pesos, matriz_relaciones = Extraer_Datos.leer_datos_SUKP(ruta)
 
 #print(w_adaptativo(1,3,'log'))
-Optimo_global = [1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1]
-
+#Optimo_global = [1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1]
+Optimo_global = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 #print(len(Optimo_global))
-#print(f"m = {m}, n = {n}, capacidad = {capacidad}")
-#print(f"profits (len={len(profits)}): {profits[:5]}...") # m (Sumo todos las filas seleccionadas) 
+#print(f"items = {items}, elementos = {elementos}, capacidad = {capacidad}")
+#print(f"profits (len={len(beneficios)}): {beneficios[:5]}...") # m (Sumo todos las filas seleccionadas) 
 #print(f"weights (len={len(weights)}): {weights[:5]}...") # n (escojo una fila y multiplico por estos pesos)
 #print(f"relaciones (dim={len(matriz_relaciones)}x{len(matriz_relaciones[0])}): fila 0 = {matriz_relaciones[0][:5]}...")
 
-print(calcular_funcion_objetivo(Optimo_global,matriz_relaciones,weights,profits,capacidad))
+print(calcular_funcion_objetivo(Optimo_global,matriz_relaciones,pesos,beneficios,capacidad))
