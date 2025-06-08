@@ -5,7 +5,7 @@ import time
 
 def w_adaptativo(nivel, parametro_control, tipo_funcion):
     if nivel == 0:
-        return 4
+        return 24
     if tipo_funcion == 'log':
         return int(np.log(nivel) / np.log(1 / 5) + (parametro_control + 2))
     elif tipo_funcion == 'frac':
@@ -94,10 +94,10 @@ def beam_search(num_items, capacidad, beneficios, pesos, matriz_relacion, tipo_f
     return mejor_solucion, mejor_valor
 
 # --- Ejecución del algoritmo ---
-ruta = ".\\Problemas\\Benchmark2.txt"
+ruta = ".\\Problemas\\Benchmark1.txt"
 num_items, elementos, capacidad, beneficios, pesos, matriz_relaciones = Extraer_Datos.leer_datos_SUKP(ruta)
 
-archivo_registro = "Resultados_Estocasticos_Benchmark2.txt"
+archivo_registro = "Resultados_Estocasticos_Benchmark1.txt"
 mejor_solucion, mejor_valor = beam_search(num_items, capacidad, beneficios, pesos, matriz_relaciones, 'log', 5, archivo_registro)
 
 beneficio, peso_final, elementos_usados = calcular_funcion_objetivo(mejor_solucion, matriz_relaciones, pesos, beneficios, capacidad)
