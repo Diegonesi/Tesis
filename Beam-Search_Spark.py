@@ -1,6 +1,7 @@
 import Extraer_Datos
 import numpy as np
 import time
+from pyspark.sql import SparkSession
 
 def w_adaptativo(nivel, parametro_control, tipo_funcion):
     if nivel == 0:
@@ -59,38 +60,92 @@ def seleccion_estocastica(candidatos, w, temperatura=10.0):
     
     return seleccionados
 
+def procesar_nodo(params):
+    solucion_actual, nivel, matriz_relacion, pesos, beneficios, capacidad = params
+    nuevos = []
+    for decision in [0, 1]:
+        nueva_solucion = solucion_actual[:]
+        nueva_solucion[nivel] = decision
+        beneficio, peso, elementos_usados = calcular_funcion_objetivo(
+            nueva_solucion, matriz_relacion, pesos, beneficios, capacidad
+        )
+        if peso <= capacidad and beneficio > 0:
+            nuevos.append((beneficio, nueva_solucion, peso, elementos_usados))
+    return nuevos
+
+
+
 def beam_search(num_items, capacidad, beneficios, pesos, matriz_relacion, tipo_funcion_haz, parametro_control, archivo_registro):
-    estado_inicial = [0] * num_items
-    beam = [(0, estado_inicial)]
-    mejor_solucion = estado_inicial
+    def generar_solucion_aleatoria():
+        solucion = [0] * num_items
+        indices = list(range(num_items))
+        np.random.shuffle(indices)
+        for i in indices:
+            solucion[i] = 1
+            beneficio, peso, _ = calcular_funcion_objetivo(solucion, matriz_relacion, pesos, beneficios, capacidad)
+            if peso > capacidad:
+                solucion[i] = 0
+        return solucion
+
+    mejor_solucion = None
     mejor_valor = 0
     tiempo_inicio = time.time()
 
+    beam = []
+
     for nivel in range(num_items):
         candidatos = []
+        #print(nivel)
+        # Nivel 0: generar W soluciones aleatorias
+        if nivel == 0:
+            w = w_adaptativo(nivel, parametro_control, tipo_funcion_haz)
+            for _ in range(w ):  # generar más de W para filtrar por calidad
+                solucion = generar_solucion_aleatoria()
+                beneficio, peso, elementos_usados = calcular_funcion_objetivo(solucion, matriz_relacion, pesos, beneficios, capacidad)
+                if beneficio > 0:
+                    candidatos.append((beneficio, solucion))
+                    if beneficio > mejor_valor:
+                        mejor_valor = beneficio
+                        mejor_solucion = solucion
+                        tiempo_actual = time.time() - tiempo_inicio
+                        registrar_mejora(archivo_registro, mejor_valor, mejor_solucion, peso, tiempo_actual, elementos_usados)
+        else:
+            
+            def procesar_nodo(solucion_actual):
+                nuevos = []
+                for decision in [0, 1]:
+                    nueva_solucion = solucion_actual[:]
+                    nueva_solucion[nivel] = decision
+                    beneficio, peso, elementos_usados = calcular_funcion_objetivo(nueva_solucion, matriz_relacion, pesos, beneficios, capacidad)
+                    if peso <= capacidad and beneficio > 0:
+                        nuevos.append((beneficio, nueva_solucion, peso, elementos_usados))
+                return nuevos
 
-        for beneficio_actual, solucion_actual in beam:
-            for decision in [0, 1]:
-                nueva_solucion = solucion_actual[:]
-                nueva_solucion[nivel] = decision
-                beneficio, peso, cantidad_elementos_usados = calcular_funcion_objetivo(nueva_solucion, matriz_relacion, pesos, beneficios, capacidad)
-                if peso > capacidad or beneficio == 0:
-                    continue
+            # Crear un RDD con las soluciones actuales del haz
+            soluciones_rdd = sc.parallelize([sol for _, sol in beam])
+
+            # Procesar cada nodo en paralelo con Spark
+            resultados = soluciones_rdd.flatMap(procesar_nodo).collect()
+
+            for beneficio, nueva_solucion, peso, elementos_usados in resultados:
                 candidatos.append((beneficio, nueva_solucion))
                 if beneficio > mejor_valor:
                     mejor_valor = beneficio
                     mejor_solucion = nueva_solucion
                     tiempo_actual = time.time() - tiempo_inicio
-                    registrar_mejora(archivo_registro, mejor_valor, mejor_solucion, peso, tiempo_actual, cantidad_elementos_usados)
+                    registrar_mejora(archivo_registro, mejor_valor, mejor_solucion, peso, tiempo_actual, elementos_usados)
+
 
         w = w_adaptativo(nivel + 1, parametro_control, tipo_funcion_haz)
         beam = seleccion_estocastica(candidatos, w, temperatura=1.0)
-
 
         if not beam:
             break
 
     return mejor_solucion, mejor_valor
+
+spark = SparkSession.builder.appName("BeamSearchSUKP").getOrCreate()
+sc = spark.sparkContext
 
 # --- Ejecución del algoritmo ---
 ruta = ".\\Problemas\\Benchmark1.txt"
@@ -100,8 +155,10 @@ archivo_registro = "Resultados_Estocasticos_Benchmark1.txt"
 mejor_solucion, mejor_valor = beam_search(num_items, capacidad, beneficios, pesos, matriz_relaciones, 'log', 5, archivo_registro)
 
 beneficio, peso_final, elementos_usados = calcular_funcion_objetivo(mejor_solucion, matriz_relaciones, pesos, beneficios, capacidad)
-print("Posee la solucion inicial como 0.... y va iterando en base a eso ")
+
 print("Mejor valor encontrado:", beneficio)
 print("Peso total:", peso_final,"| Peso maximo:", capacidad)
 print("Elementos cubiertos:", elementos_usados)
 print("Solución:", mejor_solucion)
+
+spark.stop()
