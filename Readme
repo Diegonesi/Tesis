@@ -1,2 +1,4 @@
 ##Librerias necesarias
 pip install numpy
+
+Para ejecutar, la tecnica de spark, utilizar docker build -t beamsearch-spark, docker run beamsearch-spark
